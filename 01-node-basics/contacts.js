@@ -43,19 +43,25 @@ async function removeContact(contactId) {
   }
 }
 
-function addContact(name, email, phone) {
-  const user = { name: name, email: email, phone: phone };
-  fs.appendFile(contactsPath, user, "utf8", (err) => {
-    if (err) {
-      throw err;
-    }
-    console.log("USER: ", user);
-  });
-}
+async function addContact(name, email, phone) {
+  try {
+    const contacts = await fsPromises.readFile(contactsPath, "utf-8");
 
-getContactById.exports = {
-  getContactById: getContactById(),
-};
+    const parsedContacts = await JSON.parse(contacts);
+    await parsedContacts.push({
+      id: Date.now(),
+      name: name,
+      email: email,
+      phone: phone,
+    });
+
+    await fsPromises.writeFile(contactsPath, JSON.stringify(parsedContacts));
+
+    return console.log("contacts after rewrite", contacts);
+  } catch (err) {
+    console.log("err", err);
+  }
+}
 
 module.exports = {
   listContacts: listContacts,
@@ -63,7 +69,3 @@ module.exports = {
   removeContact: removeContact,
   addContact: addContact,
 };
-// listContacts();
-// getContactById(5);
-// removeContact(1);
-// addContact("Hovard", "hovard@i.com", "390309430493");
