@@ -1,25 +1,6 @@
 const Joi = require("joi");
 
-const contacts = [
-  {
-    name: "Richard",
-    email: "richard@email.com",
-    phone: "0503332211",
-    id: 1,
-  },
-  {
-    name: "Hovard",
-    email: "Hovard@email.com",
-    phone: "0505552211",
-    id: 2,
-  },
-  {
-    name: "Boy",
-    email: "boy@email.com",
-    phone: "0675552211",
-    id: 3,
-  },
-];
+const contacts = require("../db/contacts.json");
 
 class ContactController {
   get createContact() {

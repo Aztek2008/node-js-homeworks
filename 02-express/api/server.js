@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const contactRouter = require("./contacts/contact.router");
-require("dotenv").config();
+const dotenv = require("dotenv");
+dotenv.config();
 
 module.exports = class ContactsServer {
   constructor() {
