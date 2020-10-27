@@ -12,9 +12,9 @@ const contactSchema = new Schema({
   password: { type: String, required: true },
 });
 
-contactSchema.statics.findContactByIdAndUpdateHim = findContactByIdAndUpdateHim;
+contactSchema.statics.findContactByIdAndUpdate = findContactByIdAndUpdate;
 
-async function findContactByIdAndUpdateHim(contactId, updateParams) {
+async function findContactByIdAndUpdate(contactId, updateParams) {
   return this.findByIdAndUpdate(
     contactId,
     {

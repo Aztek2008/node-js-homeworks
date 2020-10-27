@@ -61,7 +61,7 @@ class ContactController {
     try {
       const contactId = req.params.id;
 
-      const updatingContact = await contactModel.findContactByIdAndUpdateHim(
+      const updatingContact = await contactModel.findContactByIdAndUpdate(
         contactId,
         req.body
       );
