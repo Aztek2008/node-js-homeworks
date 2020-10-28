@@ -9,8 +9,8 @@ const schema = new Schema({
     validate: (value) => value.includes("@"),
     unique: true,
   },
-  phone: { type: String },
-  subscription: { type: String },
+  phone: { type: String, required: false },
+  subscription: { type: String, required: false },
   password: { type: String, required: true },
 });
 
