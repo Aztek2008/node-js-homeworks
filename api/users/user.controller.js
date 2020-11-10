@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const model = require("./contact.model");
+const userModel = require("./user.model");
 const {
   Types: { ObjectId },
 } = require("mongoose");
@@ -11,40 +11,40 @@ const {
   NotFoundError,
 } = require("../helpers/errors.constructors");
 
-class ContactController {
+class UserController {
   constructor() {
     this._costFactor = 4;
   }
 
-  get createContact() {
-    return this._createContact.bind(this);
+  get createUser() {
+    return this._createUser.bind(this);
   }
   get signIn() {
     return this._signIn.bind(this);
   }
-  get getCurrentContact() {
-    return this._getCurrentContact.bind(this);
+  get getCurrentUser() {
+    return this._getCurrentUser.bind(this);
   }
 
-  async _createContact(req, res, next) {
+  async _createUser(req, res, next) {
     try {
       const { password, email } = req.body;
       const passwordHash = await bcryptjs.hash(password, this._costFactor);
 
-      const existingContact = await contactModel.findContactByEmail(email);
-      if (existingContact) {
+      const existingUser = await userModel.findUserByEmail(email);
+      if (existingUser) {
         return res.status(409).send("Email in use");
       }
 
-      const contact = await contactModel.create({
+      const user = await userModel.create({
         email,
         password: passwordHash,
       });
 
       return res.status(201).json({
         user: {
-          email: contact.email,
-          subscription: contact.subscription,
+          email: user.email,
+          subscription: user.subscription,
         },
       });
     } catch (err) {
@@ -55,110 +55,106 @@ class ContactController {
   async _signIn(req, res, next) {
     try {
       const { email, password } = req.body;
-      const contact = await contactModel.findContactByEmail(email);
+      const user = await userModel.findUserByEmail(email);
 
-      const token = await this.checkContact(email, password);
+      const token = await this.checkUser(email, password);
 
       return res.status(200).json({
         token,
         user: {
           email,
-          subscription: contact.subscription,
+          subscription: user.subscription,
         },
       });
-      const contact = await model.create(req.body);
-
-      return res.status(201).send(`Contact ${contact.name} created`);
-
     } catch (err) {
       next(err);
     }
   }
 
-  async checkContact(email, password) {
-    const contact = await contactModel.findContactByEmail(email);
-    if (!contact) {
+  async checkUser(email, password) {
+    const user = await userModel.findUserByEmail(email);
+    if (!user) {
       throw new UnauthorizedError("Email or password is wrong");
     }
 
-    const isPasswordValid = await bcryptjs.compare(password, contact.password);
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedError("Email or password is wrong");
     }
 
-    const token = await jwt.sign({ id: contact._id }, process.env.JWT_SECRET, {
+    const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: 2 * 24 * 60 * 60, // two days
     });
-    await contactModel.updateToken(contact._id, token);
+    await userModel.updateToken(user._id, token);
 
     return token;
   }
 
-  async getContacts(req, res, next) {
+  async getUsers(req, res, next) {
     try {
-      const contacts = await model.find();
-      return res.status(200).json(contacts);
+      const users = await userModel.find();
+      return res.status(200).json(users);
     } catch (err) {
       next(err);
     }
   }
 
-  async getContactById(req, res, next) {
+  async getUserById(req, res, next) {
     try {
-      const id = req.params.id;
-      const contact = await model.findById(id);
+      const userId = req.params.id;
+      const user = await userModel.findById(userId);
 
-      if (!contact) {
-        return res.status(404).send("No contacts by your request");
+      if (!user) {
+        return res.status(404).send("No users by your request");
       }
 
-      return res.status(200).json(contact);
+      return res.status(200).json(user);
     } catch (err) {
       next(err);
     }
   }
 
-  async deleteContactById(req, res, next) {
+  async deleteUserById(req, res, next) {
     try {
-      const id = req.params.id;
+      const userId = req.params.id;
 
-      const deletedContact = await model.findByIdAndDelete(id);
+      const deletedUser = await userModel.findByIdAndDelete(userId);
 
-      if (!deletedContact) {
-        return res.status(404).send("No contacts by your request");
+      if (!deletedUser) {
+        return res.status(404).send("No users by your request");
       }
-      return res.status(204).send(`Contact ${deletedContact.name} deleted`); // DOES NOT LOG TEXT...
+      return res.status(204).send(`User ${deletedUser.name} deleted`); // DOES NOT LOG TEXT...
     } catch (err) {
       next(err);
     }
   }
 
-  async updateContactById(req, res, next) {
+  async updateUserById(req, res, next) {
     try {
-      const id = req.params.id;
+      const userId = req.params.id;
 
-      const updatingContact = await model.findContactByIdAndUpdate(
-        id,
+      const updatingUser = await userModel.findUserByIdAndUpdate(
+        userId,
         req.body
       );
 
-      if (!updatingContact) {
-        return res.status(404).send("No contacts by your request");
+      if (!updatingUser) {
+        return res.status(404).send("No users by your request");
       }
 
       return res.status(204).send(
-        `Contact ${updatingContact.name} updated with ${req.body}` // DOES NOT LOG TEXT...
+        `User ${updatingUser.name} updated with ${req.body}` // DOES NOT LOG TEXT...
       );
     } catch (err) {
       next(err);
     }
   }
 
-  async _getCurrentContact(req, res, next) {
+  async _getCurrentUser(req, res, next) {
     try {
-      const [contactForResponse] = this.prepareContactsResponse([req.user]);
+      const [userForResponse] = this.prepareUsersResponse([req.user]);
 
-      return res.status(200).json(contactForResponse);
+      return res.status(200).json(userForResponse);
     } catch (err) {
       next(err);
     }
@@ -171,7 +167,7 @@ class ContactController {
         throw new UnauthorizedError("Not authorized");
       }
 
-      await contactModel.updateToken(user._id, null);
+      await userModel.updateToken(user._id, null);
 
       return res.status(204).send();
     } catch (err) {
@@ -194,7 +190,7 @@ class ContactController {
       }
 
       // 3. витягнути відповідного користувача. Якщо такого немає - викинути помилку зі статус кодом 401
-      const user = await contactModel.findById(userId);
+      const user = await userModel.findById(userId);
 
       if (!user || user.token !== token) {
         throw new UnauthorizedError("Not authorized");
@@ -220,12 +216,9 @@ class ContactController {
     next();
   }
 
-  validateCreateContact(req, res, next) {
+  validateCreateUser(req, res, next) {
     const validationRules = Joi.object({
-      name: Joi.string().required(),
       email: Joi.string().required(),
-      phone: Joi.string(),
-      subscription: Joi.string(),
       password: Joi.string().required(),
     });
     const result = Joi.validate(req.body, validationRules);
@@ -235,12 +228,9 @@ class ContactController {
     next();
   }
 
-  validateUpdateContact(req, res, next) {
+  validateUpdateUser(req, res, next) {
     const validationRules = Joi.object({
-      name: Joi.string(),
       email: Joi.string(),
-      phone: Joi.string(),
-      subscription: Joi.string(),
       password: Joi.string(),
     });
     const result = Joi.validate(req.body, validationRules);
@@ -264,9 +254,9 @@ class ContactController {
     next();
   }
 
-  prepareContactsResponse(contacts) {
-    return contacts.map((contact) => {
-      const { email, subscription } = contact;
+  prepareUsersResponse(users) {
+    return users.map((user) => {
+      const { email, subscription } = user;
 
       return {
         email,
@@ -276,4 +266,4 @@ class ContactController {
   }
 }
 
-module.exports = new ContactController();
+module.exports = new UserController();

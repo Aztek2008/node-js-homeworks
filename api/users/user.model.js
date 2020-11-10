@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = require("mongoose");
 
-const contactSchema = new Schema({
+const userSchema = new Schema({
   name: { type: String, required: false },
   email: {
     type: String,
@@ -9,8 +9,6 @@ const contactSchema = new Schema({
     validate: (value) => value.includes("@"),
     unique: true,
   },
-  phone: { type: String, required: false },
-  subscription: { type: String, required: false },
   password: { type: String, required: true },
   subscription: {
     type: String,
@@ -20,13 +18,13 @@ const contactSchema = new Schema({
   token: String,
 });
 
-contactSchema.statics.findContactByIdAndUpdate = findContactByIdAndUpdate;
-contactSchema.statics.findContactByEmail = findContactByEmail;
-contactSchema.statics.updateToken = updateToken;
+userSchema.statics.findUserByIdAndUpdate = findUserByIdAndUpdate;
+userSchema.statics.findUserByEmail = findUserByEmail;
+userSchema.statics.updateToken = updateToken;
 
-async function findContactByIdAndUpdate(id, updateParams) {
+async function findUserByIdAndUpdate(userId, updateParams) {
   return this.findByIdAndUpdate(
-    id,
+    userId,
     {
       $set: updateParams,
     },
@@ -36,7 +34,7 @@ async function findContactByIdAndUpdate(id, updateParams) {
   );
 }
 
-async function findContactByEmail(email) {
+async function findUserByEmail(email) {
   return this.findOne({ email });
 }
 
@@ -46,7 +44,6 @@ async function updateToken(id, newToken) {
   });
 }
 
-const contactModel = mongoose.model("Contact", contactSchema);
+const userModel = mongoose.model("User", userSchema);
 
-
-module.exports = model;
+module.exports = userModel;
