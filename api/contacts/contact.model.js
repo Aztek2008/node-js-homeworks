@@ -9,6 +9,8 @@ const contactSchema = new Schema({
     validate: (value) => value.includes("@"),
     unique: true,
   },
+  phone: { type: String, required: false },
+  subscription: { type: String, required: false },
   password: { type: String, required: true },
   subscription: {
     type: String,
@@ -22,9 +24,9 @@ contactSchema.statics.findContactByIdAndUpdate = findContactByIdAndUpdate;
 contactSchema.statics.findContactByEmail = findContactByEmail;
 contactSchema.statics.updateToken = updateToken;
 
-async function findContactByIdAndUpdate(contactId, updateParams) {
+async function findContactByIdAndUpdate(id, updateParams) {
   return this.findByIdAndUpdate(
-    contactId,
+    id,
     {
       $set: updateParams,
     },
@@ -46,4 +48,5 @@ async function updateToken(id, newToken) {
 
 const contactModel = mongoose.model("Contact", contactSchema);
 
-module.exports = contactModel;
+
+module.exports = model;

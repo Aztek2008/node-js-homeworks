@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const contactModel = require("./contact.model");
+const model = require("./contact.model");
 const {
   Types: { ObjectId },
 } = require("mongoose");
@@ -66,6 +66,10 @@ class ContactController {
           subscription: contact.subscription,
         },
       });
+      const contact = await model.create(req.body);
+
+      return res.status(201).send(`Contact ${contact.name} created`);
+
     } catch (err) {
       next(err);
     }
@@ -92,7 +96,7 @@ class ContactController {
 
   async getContacts(req, res, next) {
     try {
-      const contacts = await contactModel.find();
+      const contacts = await model.find();
       return res.status(200).json(contacts);
     } catch (err) {
       next(err);
@@ -101,8 +105,8 @@ class ContactController {
 
   async getContactById(req, res, next) {
     try {
-      const contactId = req.params.id;
-      const contact = await contactModel.findById(contactId);
+      const id = req.params.id;
+      const contact = await model.findById(id);
 
       if (!contact) {
         return res.status(404).send("No contacts by your request");
@@ -116,9 +120,9 @@ class ContactController {
 
   async deleteContactById(req, res, next) {
     try {
-      const contactId = req.params.id;
+      const id = req.params.id;
 
-      const deletedContact = await contactModel.findByIdAndDelete(contactId);
+      const deletedContact = await model.findByIdAndDelete(id);
 
       if (!deletedContact) {
         return res.status(404).send("No contacts by your request");
@@ -131,10 +135,10 @@ class ContactController {
 
   async updateContactById(req, res, next) {
     try {
-      const contactId = req.params.id;
+      const id = req.params.id;
 
-      const updatingContact = await contactModel.findContactByIdAndUpdate(
-        contactId,
+      const updatingContact = await model.findContactByIdAndUpdate(
+        id,
         req.body
       );
 
@@ -218,7 +222,10 @@ class ContactController {
 
   validateCreateContact(req, res, next) {
     const validationRules = Joi.object({
+      name: Joi.string().required(),
       email: Joi.string().required(),
+      phone: Joi.string(),
+      subscription: Joi.string(),
       password: Joi.string().required(),
     });
     const result = Joi.validate(req.body, validationRules);
@@ -230,7 +237,10 @@ class ContactController {
 
   validateUpdateContact(req, res, next) {
     const validationRules = Joi.object({
+      name: Joi.string(),
       email: Joi.string(),
+      phone: Joi.string(),
+      subscription: Joi.string(),
       password: Joi.string(),
     });
     const result = Joi.validate(req.body, validationRules);
