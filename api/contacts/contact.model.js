@@ -1,17 +1,31 @@
 const mongoose = require("mongoose");
-const { Schema } = require("mongoose");
+const {
+  Schema
+} = require("mongoose");
 
 const contactSchema = new Schema({
-  name: { type: String, required: false },
+  name: {
+    type: String,
+    required: false
+  },
   email: {
     type: String,
     required: true,
     validate: (value) => value.includes("@"),
     unique: true,
   },
-  phone: { type: String, required: false },
-  subscription: { type: String, required: false },
-  password: { type: String, required: true },
+  phone: {
+    type: String,
+    required: false
+  },
+  subscription: {
+    type: String,
+    required: false
+  },
+  password: {
+    type: String,
+    required: true
+  },
   subscription: {
     type: String,
     enum: ["free", "pro", "premium"],
@@ -26,18 +40,18 @@ contactSchema.statics.updateToken = updateToken;
 
 async function findContactByIdAndUpdate(id, updateParams) {
   return this.findByIdAndUpdate(
-    id,
-    {
+    id, {
       $set: updateParams,
-    },
-    {
+    }, {
       new: true,
     }
   );
 }
 
 async function findContactByEmail(email) {
-  return this.findOne({ email });
+  return this.findOne({
+    email
+  });
 }
 
 async function updateToken(id, newToken) {
@@ -49,4 +63,4 @@ async function updateToken(id, newToken) {
 const contactModel = mongoose.model("Contact", contactSchema);
 
 
-module.exports = model;
+module.exports = contactModel;

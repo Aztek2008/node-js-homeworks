@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const multer = require("multer");
 const userModel = require("./user.model");
 const {
   Types: { ObjectId },
@@ -10,6 +11,10 @@ const {
   UnauthorizedError,
   NotFoundError,
 } = require("../helpers/errors.constructors");
+
+const upload = multer({
+  dest: "public/images",
+});
 
 class UserController {
   constructor() {
@@ -71,6 +76,19 @@ class UserController {
     }
   }
 
+  uploadAvatar(req, res, next) {
+    try {
+      upload.single("avatar");
+
+      console.log("file", req.file);
+      console.log("body", req.body);
+
+      return res.json(req.file);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async checkUser(email, password) {
     const user = await userModel.findUserByEmail(email);
     if (!user) {
@@ -82,9 +100,15 @@ class UserController {
       throw new UnauthorizedError("Email or password is wrong");
     }
 
-    const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: 2 * 24 * 60 * 60, // two days
-    });
+    const token = await jwt.sign(
+      {
+        id: user._id,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: 2 * 24 * 60 * 60, // two days
+      }
+    );
     await userModel.updateToken(user._id, token);
 
     return token;

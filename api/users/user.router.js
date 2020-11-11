@@ -3,6 +3,8 @@ const userController = require("./user.controller");
 
 const userRouter = Router();
 
+userRouter.post("/profile", userController.uploadAvatar);
+
 userRouter.post(
   "/auth/register",
   userController.validateCreateUser,
