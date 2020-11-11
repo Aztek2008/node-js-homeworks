@@ -1,9 +1,29 @@
 const { Router } = require("express");
+const multer = require("multer");
+const path = require("path");
 const userController = require("./user.controller");
 
 const userRouter = Router();
 
-userRouter.post("/profile", userController.uploadAvatar);
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "public/images/");
+  },
+  filename: function (req, file, cb) {
+    console.log("file", file);
+    const ext = path.parse(file.originalname).ext;
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
+
+userRouter.post("/profile", upload.single("avatar"), (req, res) => {
+  console.log("req file", req.file);
+  console.log("body", req.body);
+
+  res.json(req.file);
+});
 
 userRouter.post(
   "/auth/register",

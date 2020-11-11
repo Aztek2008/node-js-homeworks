@@ -76,14 +76,15 @@ class UserController {
     }
   }
 
-  uploadAvatar(req, res, next) {
+  async uploadAvatar(req, res, next) {
     try {
       upload.single("avatar");
+      (req, res) => {
+        console.log("file", request.file);
+        console.log("body", request.body);
 
-      console.log("file", req.file);
-      console.log("body", req.body);
-
-      return res.json(req.file);
+        return res.json(request.file);
+      };
     } catch (err) {
       next(err);
     }
