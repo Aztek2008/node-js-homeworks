@@ -1,7 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const contactRouter = require("./contacts/contact.router");
-const userRouter = require("./users/user.router");
+const userRouter = require("./users/user.router").default;
 require("dotenv").config();
 
 module.exports = class UserServer {
@@ -28,7 +28,8 @@ module.exports = class UserServer {
   initRoutes() {
     this.server.use("/users", userRouter);
     this.server.use("/contacts", contactRouter);
-    this.server.use("/images", express.static("public/images")); // ???
+    this.server.use("/images", express.static("public/images"));
+    // http://localhost:3000/users/1605120605096.jpg
   }
 
   async initDataBase() {
@@ -36,6 +37,7 @@ module.exports = class UserServer {
       await mongoose.connect(process.env.MONGODB_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        useCreateIndex: true,
       });
 
       return console.log("Database connection successful");

@@ -1,7 +1,7 @@
 const Joi = require("joi");
+const fs = require("fs");
 const multer = require("multer");
 const userModel = require("./user.model");
-const express = require("express");
 const path = require("path");
 const {
   Types: { ObjectId },
@@ -13,17 +13,6 @@ const {
   UnauthorizedError,
   NotFoundError,
 } = require("../helpers/errors.constructors");
-
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, "public/images/");
-//   },
-//   filename: function (req, file, cb) {
-//     console.log("file", file);
-//     const ext = path.parse(file.originalname).ext;
-//     cb(null, `${Date.now()}${ext}`);
-//   },
-// });
 
 //============== AVATAR GENERATE ======================
 const Avatar = require("avatar-builder");
@@ -40,8 +29,6 @@ avatar
   .create("allaigre")
   .then((buffer) => fs.writeFileSync("avatar-allaigre.png", buffer));
 //============== AVATAR GENERATE ======================
-
-const upload = multer({ dest: "public/images" });
 
 class UserController {
   constructor() {
@@ -62,6 +49,7 @@ class UserController {
     try {
       const { password, email } = req.body;
       const passwordHash = await bcryptjs.hash(password, this._costFactor);
+      const PORT = process.env.PORT;
 
       const existingUser = await userModel.findUserByEmail(email);
       if (existingUser) {
@@ -71,13 +59,14 @@ class UserController {
       const user = await userModel.create({
         email,
         password: passwordHash,
-        avatarURL: "http://localhost:3000/images/" + req.file.filename,
+        avatarURL: `http://localhost:${PORT}/images/` + req.file.filename,
       });
 
       return res.status(201).json({
         user: {
           email: user.email,
           subscription: user.subscription,
+          avatarURL: user.avatarURL,
         },
       });
     } catch (err) {
@@ -97,6 +86,7 @@ class UserController {
         user: {
           email,
           subscription: user.subscription,
+          avatarURL: user.avatarURL,
         },
       });
     } catch (err) {
@@ -104,25 +94,11 @@ class UserController {
     }
   }
 
-  // DRAFT
-  // async uploadAvatar(req, res, next) {
-  //   try {
-  //     upload.single("avatar");
-  //     (req, res) => {
-  //       console.log("file", request.file);
-  //       console.log("body", request.body);
-
-  //       return res.json(request.file);
-  //     };
-  //   } catch (err) {
-  //     next(err);
-  //   }
-  // }
-
   multerMiddlware = () => {
     const storage = multer.diskStorage({
-      destination: "public/images/",
+      destination: "tmp",
       filename: function (req, file, cb) {
+        console.log("file", file);
         const ext = path.parse(file.originalname).ext;
         cb(null, `${Date.now()}${ext}`);
       },
@@ -164,8 +140,10 @@ class UserController {
           }),
         ],
       });
+
       const { filename, path: draftPath } = req.file;
       await fsPromises.unlink(draftPath);
+
       req.file = {
         ...req.file,
         path: path.join(MINI_IMG, filename),
@@ -178,28 +156,32 @@ class UserController {
   }
 
   async checkUser(email, password) {
-    const user = await userModel.findUserByEmail(email);
-    if (!user) {
-      throw new UnauthorizedError("Email or password is wrong");
-    }
-
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedError("Email or password is wrong");
-    }
-
-    const token = await jwt.sign(
-      {
-        id: user._id,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: 2 * 24 * 60 * 60, // two days
+    try {
+      const user = await userModel.findUserByEmail(email);
+      if (!user) {
+        throw new UnauthorizedError("Email or password is wrong");
       }
-    );
-    await userModel.updateToken(user._id, token);
 
-    return token;
+      const isPasswordValid = await bcryptjs.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedError("Email or password is wrong");
+      }
+
+      const token = await jwt.sign(
+        {
+          id: user._id,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: 2 * 24 * 60 * 60, // two days
+        }
+      );
+      await userModel.updateToken(user._id, token);
+
+      return token;
+    } catch (err) {
+      next(err);
+    }
   }
 
   async getUsers(req, res, next) {

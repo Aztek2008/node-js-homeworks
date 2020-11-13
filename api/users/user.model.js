@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { Schema } = require("mongoose");
 
 const userSchema = new Schema({
-  name: { type: String, required: false },
+  // name: { type: String, required: false },
   email: {
     type: String,
     required: true,
@@ -10,6 +10,7 @@ const userSchema = new Schema({
     unique: true,
   },
   password: { type: String, required: true },
+  avatarURL: { type: String, required: false },
   subscription: {
     type: String,
     enum: ["free", "pro", "premium"],

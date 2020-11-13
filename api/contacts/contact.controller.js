@@ -1,17 +1,15 @@
 const Joi = require("joi");
 const model = require("./contact.model");
 const {
-  Types: {
-    ObjectId
-  },
+  Types: { ObjectId },
 } = require("mongoose");
-Joi.objectId = require("joi-objectid")(Joi);
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const {
   UnauthorizedError,
   NotFoundError,
 } = require("../helpers/errors.constructors");
+Joi.objectId = require("joi-objectid")(Joi);
 
 class ContactController {
   constructor() {
@@ -30,10 +28,7 @@ class ContactController {
 
   async _createContact(req, res, next) {
     try {
-      const {
-        password,
-        email
-      } = req.body;
+      const { password, email } = req.body;
       const passwordHash = await bcryptjs.hash(password, this._costFactor);
 
       const existingContact = await contactModel.findContactByEmail(email);
@@ -59,10 +54,7 @@ class ContactController {
 
   async _signIn(req, res, next) {
     try {
-      const {
-        email,
-        password
-      } = req.body;
+      const { email, password } = req.body;
       const contact = await contactModel.findContactByEmail(email);
 
       const token = await this.checkContact(email, password);
@@ -76,7 +68,6 @@ class ContactController {
       });
       // const contact = await model.create(req.body);
       // return res.status(201).send(`Contact ${contact.name} created`);
-
     } catch (err) {
       next(err);
     }
@@ -93,11 +84,15 @@ class ContactController {
       throw new UnauthorizedError("Email or password is wrong");
     }
 
-    const token = await jwt.sign({
-      id: contact._id
-    }, process.env.JWT_SECRET, {
-      expiresIn: 2 * 24 * 60 * 60, // two days
-    });
+    const token = await jwt.sign(
+      {
+        id: contact._id,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: 2 * 24 * 60 * 60, // two days
+      }
+    );
     await contactModel.updateToken(contact._id, token);
 
     return token;
@@ -220,9 +215,7 @@ class ContactController {
   }
 
   validateId(req, res, next) {
-    const {
-      id
-    } = req.params;
+    const { id } = req.params;
 
     if (!ObjectId.isValid(id)) {
       return res.status(400).send(`ID ${id} not found`);
@@ -277,10 +270,7 @@ class ContactController {
 
   prepareContactsResponse(contacts) {
     return contacts.map((contact) => {
-      const {
-        email,
-        subscription
-      } = contact;
+      const { email, subscription } = contact;
 
       return {
         email,
