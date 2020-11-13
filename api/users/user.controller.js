@@ -1,6 +1,8 @@
 const Joi = require("joi");
 const multer = require("multer");
 const userModel = require("./user.model");
+const express = require("express");
+const path = require("path");
 const {
   Types: { ObjectId },
 } = require("mongoose");
@@ -12,9 +14,34 @@ const {
   NotFoundError,
 } = require("../helpers/errors.constructors");
 
-const upload = multer({
-  dest: "public/images",
-});
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "public/images/");
+//   },
+//   filename: function (req, file, cb) {
+//     console.log("file", file);
+//     const ext = path.parse(file.originalname).ext;
+//     cb(null, `${Date.now()}${ext}`);
+//   },
+// });
+
+//============== AVATAR GENERATE ======================
+const Avatar = require("avatar-builder");
+const avatar = Avatar.builder(
+  Avatar.Image.margin(Avatar.Image.circleMask(Avatar.Image.identicon())),
+  128,
+  128,
+  { cache: Avatar.Cache.lru() }
+);
+avatar
+  .create("gabriel")
+  .then((buffer) => fs.writeFileSync("avatar-gabriel.png", buffer));
+avatar
+  .create("allaigre")
+  .then((buffer) => fs.writeFileSync("avatar-allaigre.png", buffer));
+//============== AVATAR GENERATE ======================
+
+const upload = multer({ dest: "public/images" });
 
 class UserController {
   constructor() {
@@ -44,6 +71,7 @@ class UserController {
       const user = await userModel.create({
         email,
         password: passwordHash,
+        avatarURL: "http://localhost:3000/images/" + req.file.filename,
       });
 
       return res.status(201).json({
@@ -76,15 +104,74 @@ class UserController {
     }
   }
 
-  async uploadAvatar(req, res, next) {
-    try {
-      upload.single("avatar");
-      (req, res) => {
-        console.log("file", request.file);
-        console.log("body", request.body);
+  // DRAFT
+  // async uploadAvatar(req, res, next) {
+  //   try {
+  //     upload.single("avatar");
+  //     (req, res) => {
+  //       console.log("file", request.file);
+  //       console.log("body", request.body);
 
-        return res.json(request.file);
+  //       return res.json(request.file);
+  //     };
+  //   } catch (err) {
+  //     next(err);
+  //   }
+  // }
+
+  multerMiddlware = () => {
+    const storage = multer.diskStorage({
+      destination: "public/images/",
+      filename: function (req, file, cb) {
+        const ext = path.parse(file.originalname).ext;
+        cb(null, `${Date.now()}${ext}`);
+      },
+    });
+    return multer({ storage });
+  };
+
+  static async avatarGenerate(req, res, next) {
+    try {
+      const randomColor = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
+      const randomNum = Math.floor(Math.random() * (12 - 3)) + 3;
+      const avatar = Avatar.squareBuilder(
+        128,
+        randomNum,
+        [randomColor, "#ffffff"],
+        {
+          cache: null,
+        }
+      );
+      const buffer = await avatar.create("gabriel");
+      const filename = Date.now() + ".png";
+      const destination = "tmp";
+      await fs.writeFileSync(`${destination}/${filename}`, buffer);
+      req.file = { destination, filename, path: `${destination}/${filename}` };
+      next();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  static async imageMini(req, res, next) {
+    try {
+      const MINI_IMG = "public/images";
+      await imagemin([`${req.file.destination}/*.{jpg,png}`], {
+        destination: MINI_IMG,
+        plugins: [
+          imageminJpegtran(),
+          imageminPngquant({
+            quality: [0.6, 0.8],
+          }),
+        ],
+      });
+      const { filename, path: draftPath } = req.file;
+      await fsPromises.unlink(draftPath);
+      req.file = {
+        ...req.file,
+        path: path.join(MINI_IMG, filename),
+        destination: MINI_IMG,
       };
+      next();
     } catch (err) {
       next(err);
     }
@@ -283,10 +370,7 @@ class UserController {
     return users.map((user) => {
       const { email, subscription } = user;
 
-      return {
-        email,
-        subscription,
-      };
+      return { email, subscription };
     });
   }
 }

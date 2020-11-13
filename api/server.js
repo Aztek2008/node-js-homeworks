@@ -28,6 +28,7 @@ module.exports = class UserServer {
   initRoutes() {
     this.server.use("/users", userRouter);
     this.server.use("/contacts", contactRouter);
+    this.server.use("/images", express.static("public/images")); // ???
   }
 
   async initDataBase() {

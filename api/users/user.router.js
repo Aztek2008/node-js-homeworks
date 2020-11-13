@@ -1,29 +1,28 @@
 const { Router } = require("express");
+const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const userController = require("./user.controller");
 
 const userRouter = Router();
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "public/images/");
-  },
-  filename: function (req, file, cb) {
-    console.log("file", file);
-    const ext = path.parse(file.originalname).ext;
-    cb(null, `${Date.now()}${ext}`);
-  },
-});
+userRouter.use(express.static("public/images"));
+// http://localhost:3000/users/1605120605096.jpg
 
-const upload = multer({ storage });
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "public/images/");
+//   },
+//   filename: function (req, file, cb) {
+//     console.log("file", file);
+//     const ext = path.parse(file.originalname).ext;
+//     cb(null, `${Date.now()}${ext}`);
+//   },
+// });
 
-userRouter.post("/profile", upload.single("avatar"), (req, res) => {
-  console.log("req file", req.file);
-  console.log("body", req.body);
+// const upload = multer({ storage });
 
-  res.json(req.file);
-});
+userRouter.post("/profile", userController.multerMiddlware().single("avatar"));
 
 userRouter.post(
   "/auth/register",
