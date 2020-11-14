@@ -8,8 +8,8 @@ userRouter.post("/profile", userController.multerMiddlware().single("avatar"));
 userRouter.post(
   "/auth/register",
   userController.validateCreateUser,
-  userController.avatarGenerate, // ISSUE
-  userController.imageMini, // ISSUE
+  // userController.avatarGenerate, // ISSUE
+  // userController.imageMini, // ISSUE
   userController.createUser
 );
 

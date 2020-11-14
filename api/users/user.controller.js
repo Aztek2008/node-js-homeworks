@@ -16,6 +16,15 @@ const {
 } = require("../helpers/errors.constructors");
 require("dotenv").config();
 
+const avatar = Avatar.male8bitBuilder(128);
+
+const smth = avatar.create("gabriel").then((buffer) => {
+  /* png buffer */
+  "../../tmp";
+});
+
+console.log("smth", smth);
+
 class UserController {
   constructor() {
     this._costFactor = 4;
