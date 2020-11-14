@@ -1,12 +1,10 @@
 const mongoose = require("mongoose");
-const {
-  Schema
-} = require("mongoose");
+const { Schema } = require("mongoose");
 
 const contactSchema = new Schema({
   name: {
     type: String,
-    required: false
+    required: false,
   },
   email: {
     type: String,
@@ -16,15 +14,15 @@ const contactSchema = new Schema({
   },
   phone: {
     type: String,
-    required: false
+    required: false,
   },
   subscription: {
     type: String,
-    required: false
+    required: false,
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
   subscription: {
     type: String,
@@ -39,28 +37,41 @@ contactSchema.statics.findContactByEmail = findContactByEmail;
 contactSchema.statics.updateToken = updateToken;
 
 async function findContactByIdAndUpdate(id, updateParams) {
-  return this.findByIdAndUpdate(
-    id, {
-      $set: updateParams,
-    }, {
-      new: true,
-    }
-  );
+  try {
+    return this.findByIdAndUpdate(
+      id,
+      {
+        $set: updateParams,
+      },
+      {
+        new: true,
+      }
+    );
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function findContactByEmail(email) {
-  return this.findOne({
-    email
-  });
+  try {
+    return this.findOne({
+      email,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function updateToken(id, newToken) {
-  return this.findByIdAndUpdate(id, {
-    token: newToken,
-  });
+  try {
+    return this.findByIdAndUpdate(id, {
+      token: newToken,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 const contactModel = mongoose.model("Contact", contactSchema);
-
 
 module.exports = contactModel;

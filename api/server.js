@@ -1,7 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const contactRouter = require("./contacts/contact.router");
-const userRouter = require("./users/user.router").default;
+const userRouter = require("./users/user.router");
 require("dotenv").config();
 
 module.exports = class UserServer {
@@ -10,11 +10,15 @@ module.exports = class UserServer {
   }
 
   async start() {
-    this.initServer();
-    this.initMiddleware();
-    this.initRoutes();
-    await this.initDataBase();
-    this.startListening();
+    try {
+      this.initServer();
+      this.initMiddleware();
+      this.initRoutes();
+      await this.initDataBase();
+      this.startListening();
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   initServer() {

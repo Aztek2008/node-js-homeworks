@@ -24,25 +24,37 @@ userSchema.statics.findUserByEmail = findUserByEmail;
 userSchema.statics.updateToken = updateToken;
 
 async function findUserByIdAndUpdate(userId, updateParams) {
-  return this.findByIdAndUpdate(
-    userId,
-    {
-      $set: updateParams,
-    },
-    {
-      new: true,
-    }
-  );
+  try {
+    return this.findByIdAndUpdate(
+      userId,
+      {
+        $set: updateParams,
+      },
+      {
+        new: true,
+      }
+    );
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function findUserByEmail(email) {
-  return this.findOne({ email });
+  try {
+    return this.findOne({ email });
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function updateToken(id, newToken) {
-  return this.findByIdAndUpdate(id, {
-    token: newToken,
-  });
+  try {
+    return this.findByIdAndUpdate(id, {
+      token: newToken,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 const userModel = mongoose.model("User", userSchema);

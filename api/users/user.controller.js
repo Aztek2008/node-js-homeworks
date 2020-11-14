@@ -9,26 +9,12 @@ const {
 Joi.objectId = require("joi-objectid")(Joi);
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Avatar = require("avatar-builder");
 const {
   UnauthorizedError,
   NotFoundError,
 } = require("../helpers/errors.constructors");
-
-//============== AVATAR GENERATE ======================
-const Avatar = require("avatar-builder");
-const avatar = Avatar.builder(
-  Avatar.Image.margin(Avatar.Image.circleMask(Avatar.Image.identicon())),
-  128,
-  128,
-  { cache: Avatar.Cache.lru() }
-);
-avatar
-  .create("gabriel")
-  .then((buffer) => fs.writeFileSync("avatar-gabriel.png", buffer));
-avatar
-  .create("allaigre")
-  .then((buffer) => fs.writeFileSync("avatar-allaigre.png", buffer));
-//============== AVATAR GENERATE ======================
+require("dotenv").config();
 
 class UserController {
   constructor() {
@@ -59,6 +45,7 @@ class UserController {
       const user = await userModel.create({
         email,
         password: passwordHash,
+        // avatarURL: "http://localhost:3000/images/" + req.file.filename,
         avatarURL: `http://localhost:${PORT}/images/` + req.file.filename,
       });
 
@@ -96,7 +83,7 @@ class UserController {
 
   multerMiddlware = () => {
     const storage = multer.diskStorage({
-      destination: "tmp",
+      destination: "public/images",
       filename: function (req, file, cb) {
         console.log("file", file);
         const ext = path.parse(file.originalname).ext;
@@ -118,6 +105,7 @@ class UserController {
           cache: null,
         }
       );
+
       const buffer = await avatar.create("gabriel");
       const filename = Date.now() + ".png";
       const destination = "tmp";
@@ -128,6 +116,7 @@ class UserController {
       console.log(error);
     }
   }
+
   static async imageMini(req, res, next) {
     try {
       const MINI_IMG = "public/images";

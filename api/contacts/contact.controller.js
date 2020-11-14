@@ -74,28 +74,35 @@ class ContactController {
   }
 
   async checkContact(email, password) {
-    const contact = await contactModel.findContactByEmail(email);
-    if (!contact) {
-      throw new UnauthorizedError("Email or password is wrong");
-    }
-
-    const isPasswordValid = await bcryptjs.compare(password, contact.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedError("Email or password is wrong");
-    }
-
-    const token = await jwt.sign(
-      {
-        id: contact._id,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: 2 * 24 * 60 * 60, // two days
+    try {
+      const contact = await contactModel.findContactByEmail(email);
+      if (!contact) {
+        throw new UnauthorizedError("Email or password is wrong");
       }
-    );
-    await contactModel.updateToken(contact._id, token);
 
-    return token;
+      const isPasswordValid = await bcryptjs.compare(
+        password,
+        contact.password
+      );
+      if (!isPasswordValid) {
+        throw new UnauthorizedError("Email or password is wrong");
+      }
+
+      const token = await jwt.sign(
+        {
+          id: contact._id,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: 2 * 24 * 60 * 60, // two days
+        }
+      );
+      await contactModel.updateToken(contact._id, token);
+
+      return token;
+    } catch (err) {
+      next(err);
+    }
   }
 
   async getContacts(req, res, next) {
