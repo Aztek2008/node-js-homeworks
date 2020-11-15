@@ -3,6 +3,7 @@ const fs = require("fs");
 const multer = require("multer");
 const userModel = require("./user.model");
 const path = require("path");
+const imagemin = require("imagemin");
 const {
   Types: { ObjectId },
 } = require("mongoose");
@@ -42,7 +43,7 @@ class UserController {
 
   async _createUser(req, res, next) {
     try {
-      const { password, email } = req.body;
+      const { password, email, avatarURL } = req.body;
       const passwordHash = await bcryptjs.hash(password, this._costFactor);
       const PORT = process.env.PORT;
 
@@ -102,7 +103,7 @@ class UserController {
     return multer({ storage });
   };
 
-  static async avatarGenerate(req, res, next) {
+  async avatarGenerate(req, res, next) {
     try {
       const randomColor = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
       const randomNum = Math.floor(Math.random() * (12 - 3)) + 3;
@@ -116,18 +117,18 @@ class UserController {
       );
 
       const buffer = await avatar.create("gabriel");
-      const filename = Date.now() + ".png";
+      const filename = Date.now() + ".jpg";
       const destination = "tmp";
-      await fs.writeFileSync(`${destination}/${filename}`, buffer);
-      req.file = { destination, filename, path: `${destination}/${filename}` };
+      fs.writeFileSync(`${destination}/${filename}`, buffer);
       next();
     } catch (error) {
       console.log(error);
     }
   }
 
-  static async imageMini(req, res, next) {
+  async imageMini(req, res, next) {
     try {
+      console.log("REQ", req.file4);
       const MINI_IMG = "public/images";
       await imagemin([`${req.file.destination}/*.{jpg,png}`], {
         destination: MINI_IMG,
@@ -312,6 +313,7 @@ class UserController {
     const validationRules = Joi.object({
       email: Joi.string().required(),
       password: Joi.string().required(),
+      avatarURL: Joi.string(),
     });
     const result = Joi.validate(req.body, validationRules);
     if (result.error) {
