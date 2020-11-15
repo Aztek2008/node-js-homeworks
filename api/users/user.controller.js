@@ -4,6 +4,8 @@ const multer = require("multer");
 const userModel = require("./user.model");
 const path = require("path");
 const imagemin = require("imagemin");
+const imageminJpegtran = require("imagemin-jpegtran");
+const imageminPngquant = require("imagemin-pngquant");
 const {
   Types: { ObjectId },
 } = require("mongoose");
@@ -17,14 +19,7 @@ const {
 } = require("../helpers/errors.constructors");
 require("dotenv").config();
 
-const avatar = Avatar.male8bitBuilder(128);
-
-const smth = avatar.create("gabriel").then((buffer) => {
-  /* png buffer */
-  "../../tmp";
-});
-
-console.log("smth", smth);
+const filename = Date.now() + ".jpg";
 
 class UserController {
   constructor() {
@@ -40,10 +35,13 @@ class UserController {
   get getCurrentUser() {
     return this._getCurrentUser.bind(this);
   }
+  get avatarGenerate() {
+    return this._avatarGenerate.bind(this);
+  }
 
   async _createUser(req, res, next) {
     try {
-      const { password, email, avatarURL } = req.body;
+      const { password, email } = req.body;
       const passwordHash = await bcryptjs.hash(password, this._costFactor);
       const PORT = process.env.PORT;
 
@@ -55,8 +53,7 @@ class UserController {
       const user = await userModel.create({
         email,
         password: passwordHash,
-        // avatarURL: "http://localhost:3000/images/" + req.file.filename,
-        avatarURL: `http://localhost:${PORT}/images/` + req.file.filename,
+        avatarURL: `http://localhost:${PORT}/tmp/` + filename,
       });
 
       return res.status(201).json({
@@ -93,9 +90,10 @@ class UserController {
 
   multerMiddlware = () => {
     const storage = multer.diskStorage({
-      destination: "public/images",
+      // destination: "public/images",
+      destination: "tmp",
       filename: function (req, file, cb) {
-        console.log("file", file);
+        console.log("FILE IN MULTIMIDDLEWARE:", file);
         const ext = path.parse(file.originalname).ext;
         cb(null, `${Date.now()}${ext}`);
       },
@@ -103,7 +101,7 @@ class UserController {
     return multer({ storage });
   };
 
-  async avatarGenerate(req, res, next) {
+  async _avatarGenerate(req, res, next) {
     try {
       const randomColor = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
       const randomNum = Math.floor(Math.random() * (12 - 3)) + 3;
@@ -117,7 +115,6 @@ class UserController {
       );
 
       const buffer = await avatar.create("gabriel");
-      const filename = Date.now() + ".jpg";
       const destination = "tmp";
       fs.writeFileSync(`${destination}/${filename}`, buffer);
       next();
@@ -128,7 +125,8 @@ class UserController {
 
   async imageMini(req, res, next) {
     try {
-      console.log("REQ", req.file4);
+      console.log("REQ FILE", req.file);
+
       const MINI_IMG = "public/images";
       await imagemin([`${req.file.destination}/*.{jpg,png}`], {
         destination: MINI_IMG,
@@ -224,6 +222,8 @@ class UserController {
 
   async updateUserById(req, res, next) {
     try {
+      console.log("TEST UPDATE USER");
+
       const userId = req.params.id;
 
       const updatingUser = await userModel.findUserByIdAndUpdate(
@@ -273,7 +273,6 @@ class UserController {
       // 1. витягнути токен користувача з заголовка Authorization
       const authorizationHeader = req.get("Authorization") || "";
       const token = authorizationHeader.replace("Bearer ", "");
-
       // 2. витягнути id користувача з пейлоада або вернути користувачу помилку зі статус кодом 401
       let userId;
       try {
@@ -284,6 +283,9 @@ class UserController {
 
       // 3. витягнути відповідного користувача. Якщо такого немає - викинути помилку зі статус кодом 401
       const user = await userModel.findById(userId);
+
+      console.log("ID AT MONGO: 5fb18a6afcf1d93f64610420");
+      console.log("TEST AUTHORIZE ID:", userId);
 
       if (!user || user.token !== token) {
         throw new UnauthorizedError("Not authorized");
@@ -300,10 +302,15 @@ class UserController {
   }
 
   validateId(req, res, next) {
-    const { id } = req.params;
+    // const { id } = req.params || req.user._id;
+    const { id } = req.user._id;
 
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).send(`ID ${id} not found`);
+    console.log("TEST UPDATE VALIDATE REQ PARAMS:", req.params);
+    console.log("TEST UPDATE VALIDATE REQ USED ID:", req.user._id);
+    console.log("TEST UPDATE VALIDATE ID:", id);
+
+    if (!ObjectId.isValid(req.user._id)) {
+      return res.status(400).send(`ID ${req.user._id} not found`);
     }
 
     next();
@@ -323,9 +330,12 @@ class UserController {
   }
 
   validateUpdateUser(req, res, next) {
+    console.log("TEST VALIDATE UPDATE USER");
+
     const validationRules = Joi.object({
       email: Joi.string(),
       password: Joi.string(),
+      avatarURL: Joi.string(),
     });
     const result = Joi.validate(req.body, validationRules);
     if (result.error) {
@@ -350,9 +360,9 @@ class UserController {
 
   prepareUsersResponse(users) {
     return users.map((user) => {
-      const { email, subscription } = user;
+      const { email, subscription, avatarURL } = user;
 
-      return { email, subscription };
+      return { email, subscription, avatarURL };
     });
   }
 }

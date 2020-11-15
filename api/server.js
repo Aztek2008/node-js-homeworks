@@ -32,7 +32,8 @@ module.exports = class UserServer {
   initRoutes() {
     this.server.use("/users", userRouter);
     this.server.use("/contacts", contactRouter);
-    this.server.use("/images", express.static("public/images"));
+    this.server.use("/tmp", express.static("tmp"));
+    // this.server.use("/images", express.static("public/images"));
     // http://localhost:3000/users/1605120605096.jpg
   }
 
@@ -42,6 +43,7 @@ module.exports = class UserServer {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useCreateIndex: true,
+        useFindAndModify: false,
       });
 
       return console.log("Database connection successful");

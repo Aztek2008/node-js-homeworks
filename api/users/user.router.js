@@ -1,5 +1,6 @@
 const { Router } = require("express");
 const userController = require("./user.controller");
+const multer = require("multer");
 
 const userRouter = Router();
 
@@ -9,7 +10,7 @@ userRouter.post(
   "/auth/register",
   userController.validateCreateUser,
   userController.avatarGenerate, // ISSUE WITH STATIC PREFIX TO FUNCTION
-  userController.imageMini, // ISSUE WITH STATIC PREFIX TO FUNCTION
+  // userController.imageMini, // ISSUE WITH STATIC PREFIX TO FUNCTION
   userController.createUser
 );
 
@@ -42,7 +43,7 @@ userRouter.delete(
 );
 
 userRouter.patch(
-  "/users/avatars",
+  "/avatars",
   userController.authorize,
   userController.multerMiddlware().single("avatar"),
   userController.validateId,
