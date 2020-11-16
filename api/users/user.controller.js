@@ -1,5 +1,6 @@
 const Joi = require("joi");
 const fs = require("fs");
+const fsPromises = require("fs").promises;
 const multer = require("multer");
 const userModel = require("./user.model");
 const path = require("path");
@@ -221,8 +222,12 @@ class UserController {
 
   async updateUserById(req, res, next) {
     try {
+      let oldImg = req.user.avatarURL.replace("http://localhost:3000/tmp/", "");
+      await fsPromises.unlink("tmp/" + oldImg);
+      req.body.avatarURL = "http://localhost:3000/tmp/" + req.file.filename;
+
       const updatingUser = await userModel.findUserByIdAndUpdate(
-        userId,
+        req.user._id,
         req.body
       );
 
@@ -231,7 +236,7 @@ class UserController {
       }
 
       return res.status(204).send(
-        `User with ID ${updatingUser._id} updated ` // DOES NOT LOG TEXT...
+        `User updated ` // DOES NOT LOG TEXT...
       );
     } catch (err) {
       next(err);
@@ -294,20 +299,11 @@ class UserController {
   }
 
   validateId(req, res, next) {
-    // const { id } = req.params || req.user._id;
-    const { id } = req.user._id;
+    const { id } = req.params;
 
-    console.log("TEST UPDATE VALIDATE REQ PARAMS:", req.params);
-    console.log("TEST UPDATE VALIDATE REQ USER ID:", req.user._id);
-    console.log("TEST UPDATE VALIDATE ID:", id);
-
-    if (!ObjectId.isValid(req.user._id)) {
-      return res.status(400).send(`ID ${req.user._id} not found`);
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send(`ID ${id} not found`);
     }
-
-    console.log("TEST UPDATE VALIDATE REQ PARAMS:", req.params);
-    console.log("TEST UPDATE VALIDATE REQ USER ID:", req.user._id);
-    console.log("TEST UPDATE VALIDATE ID:", id);
 
     next();
   }
