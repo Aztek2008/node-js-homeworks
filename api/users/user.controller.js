@@ -93,7 +93,6 @@ class UserController {
       // destination: "public/images",
       destination: "tmp",
       filename: function (req, file, cb) {
-        console.log("FILE IN MULTIMIDDLEWARE:", file);
         const ext = path.parse(file.originalname).ext;
         cb(null, `${Date.now()}${ext}`);
       },
@@ -177,7 +176,7 @@ class UserController {
 
       return token;
     } catch (err) {
-      next(err);
+      console.log(err);
     }
   }
 
@@ -222,10 +221,6 @@ class UserController {
 
   async updateUserById(req, res, next) {
     try {
-      console.log("TEST UPDATE USER");
-
-      const userId = req.params.id;
-
       const updatingUser = await userModel.findUserByIdAndUpdate(
         userId,
         req.body
@@ -236,7 +231,7 @@ class UserController {
       }
 
       return res.status(204).send(
-        `User ${updatingUser.name} updated with ${req.body}` // DOES NOT LOG TEXT...
+        `User with ID ${updatingUser._id} updated ` // DOES NOT LOG TEXT...
       );
     } catch (err) {
       next(err);
@@ -284,9 +279,6 @@ class UserController {
       // 3. витягнути відповідного користувача. Якщо такого немає - викинути помилку зі статус кодом 401
       const user = await userModel.findById(userId);
 
-      console.log("ID AT MONGO: 5fb18a6afcf1d93f64610420");
-      console.log("TEST AUTHORIZE ID:", userId);
-
       if (!user || user.token !== token) {
         throw new UnauthorizedError("Not authorized");
       }
@@ -306,12 +298,16 @@ class UserController {
     const { id } = req.user._id;
 
     console.log("TEST UPDATE VALIDATE REQ PARAMS:", req.params);
-    console.log("TEST UPDATE VALIDATE REQ USED ID:", req.user._id);
+    console.log("TEST UPDATE VALIDATE REQ USER ID:", req.user._id);
     console.log("TEST UPDATE VALIDATE ID:", id);
 
     if (!ObjectId.isValid(req.user._id)) {
       return res.status(400).send(`ID ${req.user._id} not found`);
     }
+
+    console.log("TEST UPDATE VALIDATE REQ PARAMS:", req.params);
+    console.log("TEST UPDATE VALIDATE REQ USER ID:", req.user._id);
+    console.log("TEST UPDATE VALIDATE ID:", id);
 
     next();
   }
@@ -330,12 +326,9 @@ class UserController {
   }
 
   validateUpdateUser(req, res, next) {
-    console.log("TEST VALIDATE UPDATE USER");
-
     const validationRules = Joi.object({
       email: Joi.string(),
       password: Joi.string(),
-      avatarURL: Joi.string(),
     });
     const result = Joi.validate(req.body, validationRules);
     if (result.error) {

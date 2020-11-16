@@ -46,7 +46,7 @@ userRouter.patch(
   "/avatars",
   userController.authorize,
   userController.multerMiddlware().single("avatar"),
-  userController.validateId,
+  // userController.validateId,
   userController.validateUpdateUser,
   userController.updateUserById
 );
