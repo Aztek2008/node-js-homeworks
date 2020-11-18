@@ -117,6 +117,7 @@ class UserController {
       const buffer = await avatar.create("gabriel");
       const destination = "tmp";
       fs.writeFileSync(`${destination}/${filename}`, buffer);
+      req.file = { destination, filename, path: `${destination}/${filename}` };
       next();
     } catch (error) {
       console.log(error);
