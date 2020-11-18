@@ -54,7 +54,8 @@ class UserController {
       const user = await userModel.create({
         email,
         password: passwordHash,
-        avatarURL: `http://localhost:${PORT}/tmp/` + filename,
+        avatarURL: `http://localhost:${PORT}/public/images/` + filename,
+        // avatarURL: `http://localhost:${PORT}/tmp/` + filename,
       });
 
       return res.status(201).json({
@@ -91,7 +92,6 @@ class UserController {
 
   multerMiddlware = () => {
     const storage = multer.diskStorage({
-      // destination: "public/images",
       destination: "tmp",
       filename: function (req, file, cb) {
         const ext = path.parse(file.originalname).ext;
@@ -127,7 +127,7 @@ class UserController {
     try {
       console.log("REQ FILE", req.file);
 
-      const MINI_IMG = "public/images";
+      const MINI_IMG = "public/images/";
       await imagemin([`${req.file.destination}/*.{jpg,png}`], {
         destination: MINI_IMG,
         plugins: [

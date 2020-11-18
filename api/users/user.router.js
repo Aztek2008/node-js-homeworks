@@ -10,7 +10,7 @@ userRouter.post(
   "/auth/register",
   userController.validateCreateUser,
   userController.avatarGenerate, // ISSUE WITH STATIC PREFIX TO FUNCTION
-  // userController.imageMini, // ISSUE WITH STATIC PREFIX TO FUNCTION
+  userController.imageMini, // ISSUE WITH STATIC PREFIX TO FUNCTION
   userController.createUser
 );
 
@@ -46,6 +46,7 @@ userRouter.patch(
   "/avatars",
   userController.authorize,
   userController.multerMiddlware().single("avatar"),
+  userController.imageMini,
   userController.updateUserById
 );
 
