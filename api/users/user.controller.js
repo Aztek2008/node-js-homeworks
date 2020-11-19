@@ -21,6 +21,7 @@ const {
 require("dotenv").config();
 
 const filename = Date.now() + ".jpg";
+const destination = "tmp";
 
 class UserController {
   constructor() {
@@ -55,7 +56,6 @@ class UserController {
         email,
         password: passwordHash,
         avatarURL: `http://localhost:${PORT}/public/images/` + filename,
-        // avatarURL: `http://localhost:${PORT}/tmp/` + filename,
       });
 
       return res.status(201).json({
@@ -115,7 +115,7 @@ class UserController {
       );
 
       const buffer = await avatar.create("gabriel");
-      const destination = "tmp";
+      // const destination = "tmp";
       fs.writeFileSync(`${destination}/${filename}`, buffer);
       req.file = { destination, filename, path: `${destination}/${filename}` };
       next();
@@ -223,9 +223,13 @@ class UserController {
 
   async updateUserById(req, res, next) {
     try {
-      let oldImg = req.user.avatarURL.replace("http://localhost:3000/tmp/", "");
-      await fsPromises.unlink("tmp/" + oldImg);
-      req.body.avatarURL = "http://localhost:3000/tmp/" + req.file.filename;
+      let oldImg = req.user.avatarURL.replace(
+        `http://localhost:${PORT}/tmp/`,
+        ""
+      );
+      await fsPromises.unlink(`${destination}/` + oldImg);
+      req.body.avatarURL =
+        `http://localhost:${PORT}/${destination}/` + req.file.filename;
 
       const updatingUser = await userModel.findUserByIdAndUpdate(
         req.user._id,
