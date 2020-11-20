@@ -35,6 +35,8 @@ userRouter.get("/", userController.getUsers);
 
 userRouter.get("/:id", userController.validateId, userController.getUserById);
 
+userRouter.get("/auth/verify/:verificationToken", userController.verifyEmail);
+
 userRouter.delete(
   "/:id",
   userController.validateId,

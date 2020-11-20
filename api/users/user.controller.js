@@ -1,9 +1,11 @@
-const Joi = require("joi");
 const fs = require("fs");
-const fsPromises = require("fs").promises;
-const multer = require("multer");
-const userModel = require("./user.model");
+const Joi = require("joi");
+const uuid = require("uuid");
 const path = require("path");
+const multer = require("multer");
+const sgMail = require("@sendgrid/mail");
+const fsPromises = require("fs").promises;
+
 const imagemin = require("imagemin");
 const imageminJpegtran = require("imagemin-jpegtran");
 const imageminPngquant = require("imagemin-pngquant");
@@ -11,15 +13,18 @@ const {
   Types: { ObjectId },
 } = require("mongoose");
 Joi.objectId = require("joi-objectid")(Joi);
+const Avatar = require("avatar-builder");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const Avatar = require("avatar-builder");
+
 const {
   UnauthorizedError,
   NotFoundError,
 } = require("../helpers/errors.constructors");
+const userModel = require("./user.model");
 require("dotenv").config();
 
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const filename = Date.now() + ".jpg";
 const destination = "tmp";
 
@@ -57,6 +62,8 @@ class UserController {
         password: passwordHash,
         avatarURL: `http://localhost:${PORT}/public/images/` + filename,
       });
+
+      await this.sendVerificationEmail(user);
 
       return res.status(201).json({
         user: {
@@ -126,7 +133,7 @@ class UserController {
 
   async imageMini(req, res, next) {
     try {
-      console.log("REQ FILE", req.file);
+      // console.log("REQ FILE", req.file);
 
       const MINI_IMG = "public/images/";
       await imagemin([`${req.file.destination}/*.{jpg,png}`], {
@@ -156,7 +163,7 @@ class UserController {
   async checkUser(email, password) {
     try {
       const user = await userModel.findUserByEmail(email);
-      if (!user) {
+      if (!user || user.status !== "Verified") {
         throw new UnauthorizedError("Email or password is wrong");
       }
 
@@ -253,6 +260,23 @@ class UserController {
       const [userForResponse] = this.prepareUsersResponse([req.user]);
 
       return res.status(200).json(userForResponse);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyEmail(req, res, next) {
+    try {
+      const { token } = req.params;
+
+      const userToVerify = await userModel.findByVerificationToken(token);
+      if (!userToVerify) {
+        throw new NotFoundError("User not found");
+      }
+
+      await userModel.verifyUser(userToVerify._id);
+
+      return res.status(200).send("User verified");
     } catch (err) {
       next(err);
     }
@@ -358,6 +382,29 @@ class UserController {
 
       return { email, subscription, avatarURL };
     });
+  }
+
+  async sendVerificationEmail(user) {
+    const verificationToken = uuid.v4();
+
+    await userModel.createVerificationToken(user._id, verificationToken);
+
+    const PORT = process.env.PORT;
+    const msg = {
+      to: [user.email], // REGISTRATION MAIL
+      from: "mail4api2020@gmail.com",
+      subject: "VERYFICATION EMAIL",
+      html: `<a href='http://localhost:${PORT}/users/auth/verify/${verificationToken}/'>Please verify your e-mail by clicking on this link</a>`,
+    };
+
+    await sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+      })
+      .catch((error) => {
+        console.error(error);
+      });
   }
 }
 

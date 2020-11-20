@@ -17,11 +17,21 @@ const userSchema = new Schema({
     default: "free",
   },
   token: String,
+  verificationToken: { type: String, required: false },
+  status: {
+    type: String,
+    required: true,
+    enum: ["Verified", "Created"],
+    default: "Created",
+  },
 });
 
+userSchema.statics.createVerificationToken = createVerificationToken;
+userSchema.statics.findByVerificationToken = findByVerificationToken;
 userSchema.statics.findUserByIdAndUpdate = findUserByIdAndUpdate;
 userSchema.statics.findUserByEmail = findUserByEmail;
 userSchema.statics.updateToken = updateToken;
+userSchema.statics.verifyUser = verifyUser;
 
 async function findUserByIdAndUpdate(userId, updateParams) {
   try {
@@ -55,6 +65,22 @@ async function updateToken(id, newToken) {
   } catch (err) {
     next(err);
   }
+}
+
+async function createVerificationToken(userId, verificationToken) {
+  return this.findByIdAndUpdate(userId, { verificationToken }, { new: true });
+}
+
+async function findByVerificationToken(verificationToken) {
+  return this.findOne({ verificationToken });
+}
+
+async function verifyUser(userId) {
+  return this.findByIdAndUpdate(
+    userId,
+    { status: "Verified", verificationToken: null },
+    { new: true }
+  );
 }
 
 const userModel = mongoose.model("User", userSchema);
