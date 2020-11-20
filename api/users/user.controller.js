@@ -267,16 +267,20 @@ class UserController {
 
   async verifyEmail(req, res, next) {
     try {
-      const { token } = req.params;
+      const { verificationToken } = req.params;
 
-      const userToVerify = await userModel.findByVerificationToken(token);
+      const userToVerify = await userModel.findByVerificationToken(
+        verificationToken
+      );
+
       if (!userToVerify) {
         throw new NotFoundError("User not found");
       }
 
       await userModel.verifyUser(userToVerify._id);
+      console.log("userToVerify._id", userToVerify._id);
 
-      return res.status(200).send("User verified");
+      return res.status(200).send("User verified successfully");
     } catch (err) {
       next(err);
     }
