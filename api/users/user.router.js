@@ -3,11 +3,16 @@ const userController = require("./user.controller");
 
 const userRouter = Router();
 
+userRouter.post("/profile", userController.multerMiddlware().single("avatar"));
+
 userRouter.post(
   "/auth/register",
   userController.validateCreateUser,
+  userController.avatarGenerate, // ISSUE WITH STATIC PREFIX TO FUNCTION
+  userController.imageMini, // ISSUE WITH STATIC PREFIX TO FUNCTION
   userController.createUser
 );
+
 userRouter.post(
   "/auth/login",
   userController.validateSignIn,
@@ -34,6 +39,14 @@ userRouter.delete(
   "/:id",
   userController.validateId,
   userController.deleteUserById
+);
+
+userRouter.patch(
+  "/avatars",
+  userController.authorize,
+  userController.multerMiddlware().single("avatar"),
+  userController.imageMini,
+  userController.updateUserById
 );
 
 userRouter.put(

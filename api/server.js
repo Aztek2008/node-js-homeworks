@@ -10,11 +10,15 @@ module.exports = class UserServer {
   }
 
   async start() {
-    this.initServer();
-    this.initMiddleware();
-    this.initRoutes();
-    await this.initDataBase();
-    this.startListening();
+    try {
+      this.initServer();
+      this.initMiddleware();
+      this.initRoutes();
+      await this.initDataBase();
+      this.startListening();
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   initServer() {
@@ -28,6 +32,7 @@ module.exports = class UserServer {
   initRoutes() {
     this.server.use("/users", userRouter);
     this.server.use("/contacts", contactRouter);
+    this.server.use("/images", express.static("public/images"));
   }
 
   async initDataBase() {
@@ -35,6 +40,8 @@ module.exports = class UserServer {
       await mongoose.connect(process.env.MONGODB_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        useCreateIndex: true,
+        useFindAndModify: false,
       });
 
       return console.log("Database connection successful");

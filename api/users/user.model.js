@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { Schema } = require("mongoose");
 
 const userSchema = new Schema({
-  name: { type: String, required: false },
+  // name: { type: String, required: false },
   email: {
     type: String,
     required: true,
@@ -10,6 +10,7 @@ const userSchema = new Schema({
     unique: true,
   },
   password: { type: String, required: true },
+  avatarURL: { type: String, required: false },
   subscription: {
     type: String,
     enum: ["free", "pro", "premium"],
@@ -23,25 +24,37 @@ userSchema.statics.findUserByEmail = findUserByEmail;
 userSchema.statics.updateToken = updateToken;
 
 async function findUserByIdAndUpdate(userId, updateParams) {
-  return this.findByIdAndUpdate(
-    userId,
-    {
-      $set: updateParams,
-    },
-    {
-      new: true,
-    }
-  );
+  try {
+    return this.findByIdAndUpdate(
+      userId,
+      {
+        $set: updateParams,
+      },
+      {
+        new: true,
+      }
+    );
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function findUserByEmail(email) {
-  return this.findOne({ email });
+  try {
+    return this.findOne({ email });
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function updateToken(id, newToken) {
-  return this.findByIdAndUpdate(id, {
-    token: newToken,
-  });
+  try {
+    return this.findByIdAndUpdate(id, {
+      token: newToken,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 const userModel = mongoose.model("User", userSchema);

@@ -1,15 +1,27 @@
 const Joi = require("joi");
+const fs = require("fs");
+const fsPromises = require("fs").promises;
+const multer = require("multer");
 const userModel = require("./user.model");
+const path = require("path");
+const imagemin = require("imagemin");
+const imageminJpegtran = require("imagemin-jpegtran");
+const imageminPngquant = require("imagemin-pngquant");
 const {
   Types: { ObjectId },
 } = require("mongoose");
 Joi.objectId = require("joi-objectid")(Joi);
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Avatar = require("avatar-builder");
 const {
   UnauthorizedError,
   NotFoundError,
 } = require("../helpers/errors.constructors");
+require("dotenv").config();
+
+const filename = Date.now() + ".jpg";
+const destination = "tmp";
 
 class UserController {
   constructor() {
@@ -25,11 +37,15 @@ class UserController {
   get getCurrentUser() {
     return this._getCurrentUser.bind(this);
   }
+  get avatarGenerate() {
+    return this._avatarGenerate.bind(this);
+  }
 
   async _createUser(req, res, next) {
     try {
       const { password, email } = req.body;
       const passwordHash = await bcryptjs.hash(password, this._costFactor);
+      const PORT = process.env.PORT;
 
       const existingUser = await userModel.findUserByEmail(email);
       if (existingUser) {
@@ -39,12 +55,14 @@ class UserController {
       const user = await userModel.create({
         email,
         password: passwordHash,
+        avatarURL: `http://localhost:${PORT}/public/images/` + filename,
       });
 
       return res.status(201).json({
         user: {
           email: user.email,
           subscription: user.subscription,
+          avatarURL: user.avatarURL,
         },
       });
     } catch (err) {
@@ -64,6 +82,7 @@ class UserController {
         user: {
           email,
           subscription: user.subscription,
+          avatarURL: user.avatarURL,
         },
       });
     } catch (err) {
@@ -71,23 +90,96 @@ class UserController {
     }
   }
 
-  async checkUser(email, password) {
-    const user = await userModel.findUserByEmail(email);
-    if (!user) {
-      throw new UnauthorizedError("Email or password is wrong");
-    }
-
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedError("Email or password is wrong");
-    }
-
-    const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: 2 * 24 * 60 * 60, // two days
+  multerMiddlware = () => {
+    const storage = multer.diskStorage({
+      destination: "tmp",
+      filename: function (req, file, cb) {
+        const ext = path.parse(file.originalname).ext;
+        cb(null, `${Date.now()}${ext}`);
+      },
     });
-    await userModel.updateToken(user._id, token);
+    return multer({ storage });
+  };
 
-    return token;
+  async _avatarGenerate(req, res, next) {
+    try {
+      const randomColor = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
+      const randomNum = Math.floor(Math.random() * (12 - 3)) + 3;
+      const avatar = Avatar.squareBuilder(
+        128,
+        randomNum,
+        [randomColor, "#ffffff"],
+        {
+          cache: null,
+        }
+      );
+
+      const buffer = await avatar.create("gabriel");
+      // const destination = "tmp";
+      fs.writeFileSync(`${destination}/${filename}`, buffer);
+      req.file = { destination, filename, path: `${destination}/${filename}` };
+      next();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async imageMini(req, res, next) {
+    try {
+      console.log("REQ FILE", req.file);
+
+      const MINI_IMG = "public/images/";
+      await imagemin([`${req.file.destination}/*.{jpg,png}`], {
+        destination: MINI_IMG,
+        plugins: [
+          imageminJpegtran(),
+          imageminPngquant({
+            quality: [0.6, 0.8],
+          }),
+        ],
+      });
+
+      const { filename, path: draftPath } = req.file;
+      await fsPromises.unlink(draftPath);
+
+      req.file = {
+        ...req.file,
+        path: path.join(MINI_IMG, filename),
+        destination: MINI_IMG,
+      };
+      next();
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async checkUser(email, password) {
+    try {
+      const user = await userModel.findUserByEmail(email);
+      if (!user) {
+        throw new UnauthorizedError("Email or password is wrong");
+      }
+
+      const isPasswordValid = await bcryptjs.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedError("Email or password is wrong");
+      }
+
+      const token = await jwt.sign(
+        {
+          id: user._id,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: 2 * 24 * 60 * 60, // two days
+        }
+      );
+      await userModel.updateToken(user._id, token);
+
+      return token;
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   async getUsers(req, res, next) {
@@ -131,10 +223,16 @@ class UserController {
 
   async updateUserById(req, res, next) {
     try {
-      const userId = req.params.id;
+      let oldImg = req.user.avatarURL.replace(
+        `http://localhost:${PORT}/tmp/`,
+        ""
+      );
+      await fsPromises.unlink(`${destination}/` + oldImg);
+      req.body.avatarURL =
+        `http://localhost:${PORT}/${destination}/` + req.file.filename;
 
       const updatingUser = await userModel.findUserByIdAndUpdate(
-        userId,
+        req.user._id,
         req.body
       );
 
@@ -143,7 +241,7 @@ class UserController {
       }
 
       return res.status(204).send(
-        `User ${updatingUser.name} updated with ${req.body}` // DOES NOT LOG TEXT...
+        `User updated ` // DOES NOT LOG TEXT...
       );
     } catch (err) {
       next(err);
@@ -180,7 +278,6 @@ class UserController {
       // 1. витягнути токен користувача з заголовка Authorization
       const authorizationHeader = req.get("Authorization") || "";
       const token = authorizationHeader.replace("Bearer ", "");
-
       // 2. витягнути id користувача з пейлоада або вернути користувачу помилку зі статус кодом 401
       let userId;
       try {
@@ -220,6 +317,7 @@ class UserController {
     const validationRules = Joi.object({
       email: Joi.string().required(),
       password: Joi.string().required(),
+      avatarURL: Joi.string(),
     });
     const result = Joi.validate(req.body, validationRules);
     if (result.error) {
@@ -256,12 +354,9 @@ class UserController {
 
   prepareUsersResponse(users) {
     return users.map((user) => {
-      const { email, subscription } = user;
+      const { email, subscription, avatarURL } = user;
 
-      return {
-        email,
-        subscription,
-      };
+      return { email, subscription, avatarURL };
     });
   }
 }

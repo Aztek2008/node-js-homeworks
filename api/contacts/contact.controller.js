@@ -3,13 +3,13 @@ const model = require("./contact.model");
 const {
   Types: { ObjectId },
 } = require("mongoose");
-Joi.objectId = require("joi-objectid")(Joi);
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const {
   UnauthorizedError,
   NotFoundError,
 } = require("../helpers/errors.constructors");
+Joi.objectId = require("joi-objectid")(Joi);
 
 class ContactController {
   constructor() {
@@ -66,32 +66,43 @@ class ContactController {
           subscription: contact.subscription,
         },
       });
-      const contact = await model.create(req.body);
-
-      return res.status(201).send(`Contact ${contact.name} created`);
-
+      // const contact = await model.create(req.body);
+      // return res.status(201).send(`Contact ${contact.name} created`);
     } catch (err) {
       next(err);
     }
   }
 
   async checkContact(email, password) {
-    const contact = await contactModel.findContactByEmail(email);
-    if (!contact) {
-      throw new UnauthorizedError("Email or password is wrong");
+    try {
+      const contact = await contactModel.findContactByEmail(email);
+      if (!contact) {
+        throw new UnauthorizedError("Email or password is wrong");
+      }
+
+      const isPasswordValid = await bcryptjs.compare(
+        password,
+        contact.password
+      );
+      if (!isPasswordValid) {
+        throw new UnauthorizedError("Email or password is wrong");
+      }
+
+      const token = await jwt.sign(
+        {
+          id: contact._id,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: 2 * 24 * 60 * 60, // two days
+        }
+      );
+      await contactModel.updateToken(contact._id, token);
+
+      return token;
+    } catch (err) {
+      next(err);
     }
-
-    const isPasswordValid = await bcryptjs.compare(password, contact.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedError("Email or password is wrong");
-    }
-
-    const token = await jwt.sign({ id: contact._id }, process.env.JWT_SECRET, {
-      expiresIn: 2 * 24 * 60 * 60, // two days
-    });
-    await contactModel.updateToken(contact._id, token);
-
-    return token;
   }
 
   async getContacts(req, res, next) {
