@@ -1,60 +1,39 @@
 const { Router } = require("express");
 const userController = require("./user.controller");
+const authController = require("../auth/auth.controller");
+
+const authValidator = require("../auth/auth.validator");
 
 const userRouter = Router();
 
-userRouter.post("/profile", userController.multerMiddlware().single("avatar"));
-
-userRouter.post(
-  "/auth/register",
-  userController.validateCreateUser,
-  userController.avatarGenerate, // ISSUE WITH STATIC PREFIX TO FUNCTION
-  userController.imageMini, // ISSUE WITH STATIC PREFIX TO FUNCTION
-  userController.createUser
-);
-
-userRouter.post(
-  "/auth/login",
-  userController.validateSignIn,
-  userController.signIn
-);
-
-userRouter.post(
-  "/auth/logout",
-  userController.authorize,
-  userController.logout
-);
-
 userRouter.get(
   "/current",
-  userController.authorize,
+  authController.authorize,
   userController.getCurrentUser
 );
 
 userRouter.get("/", userController.getUsers);
 
-userRouter.get("/:id", userController.validateId, userController.getUserById);
-
-userRouter.get("/auth/verify/:verificationToken", userController.verifyEmail);
+userRouter.get("/:id", authValidator.validateId, userController.getUserById);
 
 userRouter.delete(
   "/:id",
-  userController.validateId,
+  authValidator.validateId,
   userController.deleteUserById
 );
 
 userRouter.patch(
   "/avatars",
-  userController.authorize,
-  userController.multerMiddlware().single("avatar"),
-  userController.imageMini,
+  authController.authorize,
+  authController.multerMiddlware().single("avatar"),
+  authController.imageMini,
   userController.updateUserById
 );
 
 userRouter.put(
   "/:id",
-  userController.validateId,
-  userController.validateUpdateUser,
+  authValidator.validateId,
+  authValidator.validateUpdateUser,
   userController.updateUserById
 );
 

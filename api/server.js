@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const contactRouter = require("./contacts/contact.router");
 const userRouter = require("./users/user.router");
+const authRouter = require("./auth/auth.router");
 require("dotenv").config();
 
 module.exports = class UserServer {
@@ -27,9 +28,11 @@ module.exports = class UserServer {
 
   initMiddleware() {
     this.server.use(express.json());
+    this.server.use(express.static("public/images"));
   }
 
   initRoutes() {
+    this.server.use("/auth", authRouter);
     this.server.use("/users", userRouter);
     this.server.use("/contacts", contactRouter);
     this.server.use("/images", express.static("public/images"));
