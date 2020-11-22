@@ -268,7 +268,7 @@ class AuthController {
     await sgMail
       .send(msg)
       .then(() => {
-        console.log("Email sent to", user.mail);
+        console.log("Email sent to", user.email);
       })
       .catch((error) => {
         console.error(error);
