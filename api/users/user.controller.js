@@ -56,7 +56,7 @@ class UserController {
 
   async updateUserById(req, res, next) {
     try {
-      req.body.avatarURL = `http://localhost:${PORT}/public/images/${req.file.filename}`;
+      req.body.avatarURL = `http://localhost:${PORT}/${req.file.filename}`;
 
       const updatingUser = await userModel.findUserByIdAndUpdate(
         req.user._id,

@@ -51,7 +51,7 @@ class AuthController {
       const user = await userModel.create({
         email,
         password: passwordHash,
-        avatarURL: `http://localhost:${PORT}/public/images/` + filename,
+        avatarURL: `http://localhost:${PORT}/${filename}`,
       });
 
       await this.sendVerificationEmail(user);
@@ -176,6 +176,9 @@ class AuthController {
           expiresIn: 2 * 24 * 60 * 60, // two days
         }
       );
+
+      console.log("token", token);
+
       await userModel.updateToken(user._id, token);
 
       return token;
